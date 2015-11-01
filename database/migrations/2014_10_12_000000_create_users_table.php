@@ -18,6 +18,7 @@ class CreateUsersTable extends Migration
             $table->string('access_token');
             $table->string('remember_token');
             $table->string('avatar');
+            $table->bigInteger('up_votes');
             $table->timestamps();
         });
     }
