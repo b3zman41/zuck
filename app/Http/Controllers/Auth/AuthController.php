@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\FacebookService;
+use App\User;
+use Illuminate\Support\Facades\Auth;
 use Socialite;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
@@ -22,12 +25,14 @@ class AuthController extends Controller
 
     use AuthenticatesAndRegistersUsers, ThrottlesLogins;
 
+
     /**
      * Create a new authentication controller instance.
-     *
+     * @internal param FacebookService $facebookService
      */
     public function __construct()
     {
+
         $this->middleware('guest', ['except' => 'getLogout']);
     }
 
@@ -38,8 +43,15 @@ class AuthController extends Controller
 
     public function handleFacebookCallback()
     {
-        $user = Socialite::driver('facebook')->user();
+        $facebookUser = Socialite::driver('facebook')->user();
 
-        \Auth::login($user);
+        $user = FacebookService::userForFacebookUser($facebookUser);
+
+        if(!$user)
+        {
+            $user = FacebookService::createUserForFacebookUser($facebookUser);
+        }
+
+        \Auth::login($user, true);
     }
 }
