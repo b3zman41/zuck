@@ -8,11 +8,22 @@
 
 namespace App;
 
+use Guzzle\Http\Exception\BadResponseException;
+use Guzzle\Http\Exception\ClientErrorResponseException;
+use Guzzle\Service\Client;
 use \Laravel\Socialite\Two;
 
 
 class FacebookService
 {
+
+    private static $client;
+
+    public function __construct()
+    {
+        FacebookService::$client = new Client();
+    }
+
     public static function userForFacebookUser(Two\User $twoUser)
     {
 
@@ -39,7 +50,52 @@ class FacebookService
 
     public function getGroupMembers($user)
     {
-        return json_decode(file_get_contents('http://graph.facebook.com/v2.5/333743493454130/members?access_token=' . $user->access_token));
+
+        try {
+            $response = static::$client->get('/v2.5/333743493454130/members', null, [
+                'query' => [
+                    'access_token' => $user->access_token,
+                ]
+            ])->send();
+
+            return json_decode($response->getBody(true));
+
+        } catch (ClientErrorResponseException $e) {
+            dd($e->getResponse()->getBody(true));
+        }
+    }
+
+    public function updateMembers($user)
+    {
+        $members = [];
+        $next = 'https://graph.facebook.com/v2.5/333743493454130/members?access_token=' . $user->access_token;
+
+        while($next)
+        {
+            $response = static::$client->createRequest('GET', $next)->send();
+
+            $results = json_decode($response->getBody(true));
+
+            if(isset($results->paging->next))
+                $next = $results->paging->next;
+            else $next = null;
+
+            $members = array_merge($members, $results->data);
+        }
+
+        foreach($members as $member)
+        {
+            $user = User::find($member->id);
+
+            if(!$user)
+            {
+                User::forceCreate([
+                    'id' => $member->id,
+                    'username' => $member->name,
+                    'avatar' => 'https://graph.facebook.com/v2.5/' . $member->id . '/picture?type=large',
+                ]);
+            }
+        }
     }
 
 }

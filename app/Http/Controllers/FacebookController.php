@@ -18,9 +18,9 @@ class FacebookController extends Controller
         $this->facebook = $facebook;
     }
 
-    public function getGroupMembers()
+    public function updateMembers()
     {
-        return $this->facebook->getGroupMembers(\Auth::user());
+        $this->facebook->updateMembers(\Auth::user());
     }
 
 }

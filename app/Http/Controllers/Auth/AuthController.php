@@ -38,7 +38,9 @@ class AuthController extends Controller
 
     public function redirectToFacebook()
     {
-        return Socialite::driver('facebook')->redirect();
+        return Socialite::driver('facebook')
+            ->with(['scope' => 'user_managed_groups'])
+            ->redirect();
     }
 
     public function handleFacebookCallback()
